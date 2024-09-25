@@ -2,27 +2,27 @@
 {
     public class Post
     {
-        long PostId { get; set; }
-        string Text { get; set; }
+        public long PostId { get; set; }
+        public string Text { get; set; }
 
-        List<Comment> Comments { get; set; }
+        public List<Comment> Comments { get; set; }
 
-        User User { get; set; }
+        public User User { get; set; }
 
-        DateTime Date { get; set; }
+        public DateTime Date { get; set; }
 
         public int Upvotes { get; set; }  = 0;
         public int Downvotes { get; set; } = 0;
 
   
         public Post() { }
-        public Post(string text, User user, DateTime date, int upvotes, int downvotes)
+        public Post(string postText, User user)
         {
-            Text = text;
+            Text = postText;
             User = user;
-            Date = date;
-            Upvotes = upvotes;
-            Downvotes = downvotes;
+            Date = Date.Date;
+            Upvotes = 0;
+            Downvotes = 0;
         }
     }
 }
