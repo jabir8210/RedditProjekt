@@ -23,6 +23,7 @@
             Date = Date.Date;
             Upvotes = 0;
             Downvotes = 0;
+            
         }
     }
 }

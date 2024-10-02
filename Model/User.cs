@@ -9,6 +9,7 @@
         public User(string name)
         {
             Name = name;
+           
         }
         
     }

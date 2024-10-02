@@ -19,8 +19,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-var app = builder.Build();
-app.UseCors(AllowCors);
+
 
 builder.Services.AddDbContext<PostContext>(options =>
 {
@@ -29,62 +28,101 @@ builder.Services.AddDbContext<PostContext>(options =>
 
 builder.Services.AddScoped<Dataservice>();
 
-//List of all posts
-//List<Post> posts = new List<Post>();
-var user1 = new User("Hudayfa");
-//Post post = new Post(postText : "hh", user : user1, upvotes : 0, downvotes : 0);
-List<Post> posts = new List<Post>
+
+var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
 {
-    new Post("hh", user1),
-    new Post("hej", user1),
-    new Post("yo", user1),
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<PostContext>();
+    context.Database.EnsureCreated();
+    var dataService = services.GetRequiredService<Dataservice>();
+    dataService.SeedData();
+}
 
-};
+app.UseHttpsRedirection();
+app.UseCors(AllowCors);
 
-//Get all Task
-app.MapGet("/api/posts", () => posts);
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("Content-Type", "application/json");
+    await next(context);
+});
 
+//Get all posts
+app.MapGet("/api/posts", (Dataservice service) => service.GetPosts());
 
-//app.MapPut("/api/tasks/{id:int}", (int id, Todo updatedTask) =>
-//{
-//    var task = ToDoList.FirstOrDefault(t => t.Id == id);
-//    if (task is null)
-//    {
-//        return Results.NotFound();
-//    }
+//Get post by id
+app.MapGet("/api/posts/{id}", (Dataservice service, int id) =>
+{
+    var post = service.GetPost(id);
+    if (post is null)
+    {
+        return Results.NotFound();
+    }
 
-//    task.Text = updatedTask.Text;
-//    task.Done = updatedTask.Done;
-//    return Results.NoContent();
-//});
-
-
-
-////Put functionen til at ændre bool
-//app.MapPut("/api/tasks/{id}", (int id, Todo updatedTask) =>
-//{
-//    var task = ToDoList.FirstOrDefault(t => t.Id == id);
-//    if (task is null)
-//    {
-//        return Results.NotFound();
-//    }
-
-//    task.Text = updatedTask.Text;
-//    task.Done = updatedTask.Done;
-//    return Results.NoContent();
-
-//});
+    return Results.Ok(post);
+});
 
 
+//post upvote
+app.MapPost("/api/posts/{id}/upvote", (Dataservice service, int id) =>
+{
+    // Call the UpvotePost method to increment the upvotes
+    service.UpvotePost(id);
 
-app.MapGet("/", () => "Hello World!");
+    // Return NoContent() since the upvote action is performed
+    return Results.NoContent();
+});
 
 
-app.MapGet("/api/hello/{name}", (string name) => new { Message = $"Hello {name}!" });
+
+
+//post downvote
+app.MapPost("/api/posts/{id}/downvote", (Dataservice service, int id) =>
+{
+    // Call the UpvotePost method to increment the upvotes
+    service.DownvotePost(id);
+
+    // Return NoContent() since the upvote action is performed
+    return Results.NoContent();
+});
+
+
+//Create a new post
+app.MapPost("/api/posts", (Dataservice service, Post post) =>
+{
+    service.AddPost(post);
+    return Results.Created($"/api/posts/{post.PostId}", post);
+});
+
+
+//upvote a comment
+app.MapPost("/api/posts/{id}/comments/{commentId}/upvote", (Dataservice service, int id, int commentId) =>
+{
+    service.UpvoteComment(commentId, id);
+    return Results.NoContent();
+});
+
+
+//downvote a comment
+app.MapPost("/api/posts/{id}/comments/{commentId}/downvote", (Dataservice service, int id, int commentId) =>
+{
+    service.DownvoteComment(commentId, id);
+    return Results.NoContent();
+});
+
+
+//Create a new comment
+app.MapPost("/api/posts/{id}/comments", (Dataservice service, int id, Comment comment) =>
+{
+    service.AddComment(comment,id);
+    return Results.Created($"/api/posts/{id}/comments/{comment.CommentId}", comment);
+});
 
 
 
 app.Run();
-//record Task(int Id, string Text, bool Done);
+
 
 
