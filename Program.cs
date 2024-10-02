@@ -1,4 +1,7 @@
+using Data;
+using Microsoft.EntityFrameworkCore;
 using Model;
+using Service;
 using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +22,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 app.UseCors(AllowCors);
 
+builder.Services.AddDbContext<PostContext>(options =>
+{
+    options.UseSqlite(builder.Configuration.GetConnectionString("ContextSQLite"));
+});
+
+builder.Services.AddScoped<Dataservice>();
 
 //List of all posts
 //List<Post> posts = new List<Post>();
