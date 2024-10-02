@@ -15,13 +15,11 @@ namespace Model
         public int Downvotes { get; set; } = 0;
 
         public Comment() { }
-        public Comment(string text, User user, DateTime date, int upvotes, int downvotes)
+        public Comment(string text, User user, DateTime date)
         {
             Text = text;
             User = user;
-            Date = date.Date;
-            Upvotes = upvotes;
-            Downvotes = downvotes;
+            Date = DateTime.Now;
         }
     }
 }

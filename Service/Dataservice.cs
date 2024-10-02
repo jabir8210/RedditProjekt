@@ -41,6 +41,12 @@ namespace Service
                     new Post("hh", user10)
                 );
 
+                db.Post[0].Comments = new List<Comment>
+                {
+                    new Comment("hej", user1),
+                    new Comment("yo", user2)
+                };
+
                 db.SaveChanges();
             }
         }

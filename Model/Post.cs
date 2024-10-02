@@ -20,7 +20,7 @@
         {
             Text = postText;
             User = user;
-            Date = Date.Date;
+            Date = DateTime.Now;
             Upvotes = 0;
             Downvotes = 0;
             
