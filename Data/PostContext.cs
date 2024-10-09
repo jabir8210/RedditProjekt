@@ -8,6 +8,8 @@ namespace Data
     public class PostContext : DbContext
     {
         public DbSet<Post> Post { get; set; }
+
+        public DbSet<User> User { get; set; }
         public string DbPath { get; }
 
         public PostContext(DbContextOptions<PostContext> options)

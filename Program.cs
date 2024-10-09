@@ -28,6 +28,10 @@ builder.Services.AddDbContext<PostContext>(options =>
 
 builder.Services.AddScoped<Dataservice>();
 
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+});
 
 var app = builder.Build();
 
@@ -66,63 +70,89 @@ app.MapGet("/api/posts/{id}", (Dataservice service, int id) =>
 
 
 //post upvote
-app.MapPost("/api/posts/{id}/upvote", (Dataservice service, int id) =>
+app.MapPut("/api/posts/{id}/upvote", (Dataservice service, int id) =>
 {
     // Call the UpvotePost method to increment the upvotes
-    service.UpvotePost(id);
-
-    // Return NoContent() since the upvote action is performed
-    return Results.NoContent();
+    return service.UpvotePost(id);
 });
 
 
 
 
 //post downvote
-app.MapPost("/api/posts/{id}/downvote", (Dataservice service, int id) =>
+app.MapPut("/api/posts/{id}/downvote", (Dataservice service, int id) =>
 {
     // Call the UpvotePost method to increment the upvotes
-    service.DownvotePost(id);
-
-    // Return NoContent() since the upvote action is performed
-    return Results.NoContent();
+    return service.DownvotePost(id);
 });
 
 
-//Create a new post
-app.MapPost("/api/posts", (Dataservice service, Post post) =>
+//Create a new post with a user
+app.MapPost("/api/posts", (Dataservice service, PostDTO postDTO)=>
 {
-    service.AddPost(post);
-    return Results.Created($"/api/posts/{post.PostId}", post);
+    User user = service.GetUser(postDTO.UserId);
+    Post post = new Post(postDTO.Text, user);
+
+    return service.CreatePost(post);
+   
 });
 
 
-//upvote a comment
-app.MapPost("/api/posts/{id}/comments/{commentId}/upvote", (Dataservice service, int id, int commentId) =>
+
+// Upvote a comment
+app.MapPut("/api/posts/{id}/comments/{commentId}/upvote", (Dataservice service, int id, int commentId) =>
 {
-    service.UpvoteComment(commentId, id);
-    return Results.NoContent();
+    var updatedComment = service.UpvoteComment(commentId, id);
+    if (updatedComment == null)
+    {
+        return Results.NotFound("Comment not found");
+    }
+    return Results.Ok(updatedComment);
 });
 
-
-//downvote a comment
-app.MapPost("/api/posts/{id}/comments/{commentId}/downvote", (Dataservice service, int id, int commentId) =>
+// Downvote a comment
+app.MapPut("/api/posts/{id}/comments/{commentId}/downvote", (Dataservice service, int id, int commentId) =>
 {
-    service.DownvoteComment(commentId, id);
-    return Results.NoContent();
+    var updatedComment = service.DownvoteComment(commentId, id);
+    if (updatedComment == null)
+    {
+        return Results.NotFound("Comment not found");
+    }
+    return Results.Ok(updatedComment);
 });
+
 
 
 //Create a new comment
-app.MapPost("/api/posts/{id}/comments", (Dataservice service, int id, Comment comment) =>
+app.MapPost("/api/posts/{id}/comments", (Dataservice service, int id, CommentDTO commentDTO) =>
 {
-    service.AddComment(comment,id);
-    return Results.Created($"/api/posts/{id}/comments/{comment.CommentId}", comment);
+    User user = service.GetUser(commentDTO.userID);
+
+    Post post = service.GetPost(id);
+   
+    Comment comment = new Comment(commentDTO.Text, user);
+
+    return service.CreateComment(comment, id);
 });
 
+
+
+
+//get user by id
+app.MapGet("/api/users/{id}", (Dataservice service, int id) =>
+{
+    var user = service.GetUser(id);
+    if (user is null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(user);
+});
 
 
 app.Run();
 
-
+public record PostDTO(string Text, int UserId);
+public record CommentDTO(string Text, int userID);
 

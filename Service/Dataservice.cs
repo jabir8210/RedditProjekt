@@ -41,11 +41,7 @@ namespace Service
                     new Post("hh", user10)
                 );
 
-                db.Post[0].Comments = new List<Comment>
-                {
-                    new Comment("hej", user1),
-                    new Comment("yo", user2)
-                };
+              
 
                 db.SaveChanges();
             }
@@ -53,46 +49,50 @@ namespace Service
 
         public List<Post> GetPosts()
         {
-            return db.Post.ToList();
+            return db.Post.Include(p => p.User).ToList();
         }
+
 
         public Post GetPost(int id)
         {
-            return db.Post.FirstOrDefault(t => t.PostId == id);
+            return db.Post
+                     .Include(p => p.User). Include(Post => Post.Comments).ThenInclude(Comment => Comment.User)  // Include the user who created the post
+                     .FirstOrDefault(t => t.PostId == id);
         }
 
-        public void UpvotePost(int id)
+        public Post UpvotePost(int id)
         {
             var post = db.Post.FirstOrDefault(t => t.PostId == id);
             if (post is null)
             {
-                return;
+                return null;
             }
 
             post.Upvotes++;
             db.SaveChanges();
+            return post;
         }
 
-        public void DownvotePost(int id)
+        public Post DownvotePost(int id)
         {
             var post = db.Post.FirstOrDefault(t => t.PostId == id);
             if (post is null)
             {
-                return;
+                return null;
             }
 
             post.Downvotes++;
             db.SaveChanges();
+            return post;
         }
 
-        public void UpvoteComment(int commentId, int postId)
+        public Comment UpvoteComment(int commentId, int postId)
         {
-            // Include Comments when fetching the Post
             var post = db.Post.Include(p => p.Comments).FirstOrDefault(t => t.PostId == postId);
 
             if (post == null || post.Comments == null)
             {
-                return;
+                return null;
             }
 
             // Find the specific comment within the post's comments
@@ -100,23 +100,23 @@ namespace Service
 
             if (comment == null)
             {
-                return;
+                return null;
             }
 
             // Increment the upvotes
             comment.Upvotes++;
 
             db.SaveChanges();
+            return comment;
         }
 
-        public void DownvoteComment(int commentId, int postId)
+        public Comment DownvoteComment(int commentId, int postId)
         {
-            // Include Comments when fetching the Post
             var post = db.Post.Include(p => p.Comments).FirstOrDefault(t => t.PostId == postId);
 
             if (post == null || post.Comments == null)
             {
-                return;
+                return null;
             }
 
             // Find the specific comment within the post's comments
@@ -124,28 +124,24 @@ namespace Service
 
             if (comment == null)
             {
-                return;
+                return null;
             }
 
             // Increment the downvotes
             comment.Downvotes++;
 
             db.SaveChanges();
+            return comment;
         }
 
 
-        public void AddPost(Post post)
-        {
-            db.Post.Add(post);
-            db.SaveChanges();
-        }
 
-        public void AddComment(Comment comment, int postId)
+        public Comment CreateComment(Comment comment, int postId)
         {
-            var post = db.Post.FirstOrDefault(t => t.PostId == postId);
-            if (post is null)
+            var post = db.Post.Include(p => p.Comments).FirstOrDefault(t => t.PostId == postId);
+            if (post == null)
             {
-                return;
+                throw new Exception("Post not found");
             }
 
             if (post.Comments == null)
@@ -153,8 +149,27 @@ namespace Service
                 post.Comments = new List<Comment>();
             }
 
+            // Add the comment to the post's comments collection
             post.Comments.Add(comment);
+            db.SaveChanges(); // Save changes to the database
+            return comment;
+        }
+
+
+        public Post CreatePost(Post post)
+        {
+            if (post == null)
+            {
+                return null;
+            }
+            db.Post.Add(post);
             db.SaveChanges();
+            return post;
+        }
+
+        public User GetUser(int id)
+        {
+            return db.User.FirstOrDefault(t => t.UserId == id);
         }
 
 
